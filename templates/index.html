@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AES メモ帳</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Syne:wght@400;500;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0e12;--surface:#13161c;--surface2:#1a1e27;
+  --border:#252a36;--border2:#2e3545;
+  --accent:#4f8ef7;--accent2:#2dd4bf;--danger:#f87171;--success:#34d399;
+  --text:#e2e8f0;--text2:#8892a4;--text3:#4a5568;
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;line-height:1.6;}
+.app{max-width:860px;margin:0 auto;padding:2rem 1.5rem;}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;padding-bottom:1rem;border-bottom:1px solid var(--border);}
+header h1{font-size:1.3rem;font-weight:700;}
+header h1 span{color:var(--accent);}
+.logout-btn{padding:.3rem .8rem;border-radius:6px;border:1px solid var(--border2);background:transparent;font-size:.75rem;font-family:var(--mono);cursor:pointer;color:var(--text2);}
+.logout-btn:hover{color:var(--danger);border-color:var(--danger);}
+section{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1rem;}
+section h2{font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:1rem;font-family:var(--mono);}
+.field-label{font-size:.7rem;font-family:var(--mono);color:var(--text3);margin-bottom:.4rem;letter-spacing:.06em;}
+input[type=text]{width:100%;font-family:var(--mono);font-size:.8rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:.5rem .75rem;outline:none;margin-bottom:.75rem;}
+input[type=text]:focus{border-color:var(--accent);}
+textarea{width:100%;min-height:80px;resize:vertical;font-family:var(--mono);font-size:.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:.7rem .9rem;outline:none;}
+textarea:focus{border-color:var(--border2);}
+textarea::placeholder{color:var(--text3);}
+.btn{padding:.45rem 1rem;border-radius:6px;border:1px solid var(--border2);background:transparent;font-size:.8rem;font-family:var(--mono);cursor:pointer;color:var(--text2);}
+.btn-accent{border-color:rgba(79,142,247,.5);color:var(--accent);}
+.btn-accent:hover{background:rgba(79,142,247,.12);}
+.msg{font-size:.75rem;font-family:var(--mono);margin-top:.6rem;min-height:1.2rem;}
+.msg.err{color:var(--danger);}
+.msg.ok{color:var(--success);}
+.memo-list{display:flex;flex-direction:column;gap:.75rem;margin-top:.5rem;}
+.memo-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:1rem;}
+.memo-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;}
+.memo-title{font-size:.85rem;font-weight:500;}
+.memo-date{font-size:.65rem;font-family:var(--mono);color:var(--text3);}
+.memo-content{font-size:.75rem;font-family:var(--mono);color:var(--text2);white-space:pre-wrap;}
+.del-btn{padding:.2rem .6rem;border-radius:4px;border:1px solid var(--border2);background:transparent;font-size:.65rem;font-family:var(--mono);cursor:pointer;color:var(--text3);}
+.del-btn:hover{color:var(--danger);border-color:var(--danger);}
+.empty{font-size:.75rem;font-family:var(--mono);color:var(--text3);text-align:center;padding:1rem;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>AES <span>Memo</span></h1>
+    <button class="logout-btn" onclick="doLogout()">ログアウト</button>
+  </header>
+
+  <section>
+    <h2>// new memo</h2>
+    <div class="field-label">TITLE</div>
+    <input type="text" id="title" placeholder="メモのタイトル">
+    <div class="field-label">CONTENT</div>
+    <textarea id="content" placeholder="メモの内容（AES-256で暗号化して保存されます）"></textarea>
+    <div style="margin-top:.75rem;">
+      <button class="btn btn-accent" onclick="createMemo()">▶ 暗号化して保存</button>
+    </div>
+    <div class="msg" id="create-msg"></div>
+  </section>
+
+  <section>
+    <h2>// my memos</h2>
+    <div class="memo-list" id="memo-list">
+      <div class="empty">読み込み中...</div>
+    </div>
+  </section>
+</div>
+
+<script>
+async function loadMemos(){
+  const res=await fetch('/api/memos');
+  const memos=await res.json();
+  const list=document.getElementById('memo-list');
+  if(memos.length===0){
+    list.innerHTML='<div class="empty">メモがありません</div>';
+    return;
+  }
+  list.innerHTML=memos.map(m=>`
+    <div class="memo-card">
+      <div class="memo-card-header">
+        <span class="memo-title">${m.title}</span>
+        <div style="display:flex;gap:.5rem;align-items:center;">
+          <span class="memo-date">${m.created_at}</span>
+          <button class="del-btn" onclick="deleteMemo(${m.id})">削除</button>
+        </div>
+      </div>
+      <div class="memo-content">${m.content}</div>
+    </div>
+  `).join('');
+}
+
+async function createMemo(){
+  const title=document.getElementById('title').value;
+  const content=document.getElementById('content').value;
+  const msg=document.getElementById('create-msg');
+  const res=await fetch('/api/memos',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({title,content})
+  });
+  const data=await res.json();
+  if(res.ok){
+    msg.className='msg ok';
+    msg.textContent='保存しました！';
+    document.getElementById('title').value='';
+    document.getElementById('content').value='';
+    loadMemos();
+    setTimeout(()=>msg.textContent='',3000);
+  }else{
+    msg.className='msg err';
+    msg.textContent=data.error;
+  }
+}
+
+async function deleteMemo(id){
+  await fetch(`/api/memos/${id}`,{method:'DELETE'});
+  loadMemos();
+}
+
+async function doLogout(){
+  await fetch('/api/logout',{method:'POST'});
+  location.href='/login';
+}
+
+loadMemos();
+</script>
+</body>
+</html>

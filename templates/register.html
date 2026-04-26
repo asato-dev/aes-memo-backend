@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登録 — AES メモ帳</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Syne:wght@400;500;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0e12;--surface:#13161c;--surface2:#1a1e27;
+  --border:#252a36;--border2:#2e3545;
+  --accent:#4f8ef7;--danger:#f87171;--success:#34d399;
+  --text:#e2e8f0;--text2:#8892a4;--text3:#4a5568;
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;width:100%;max-width:400px;}
+h1{font-size:1.3rem;margin-bottom:.25rem;}
+h1 span{color:var(--accent);}
+p.sub{font-size:.75rem;color:var(--text2);font-family:var(--mono);margin-bottom:1.5rem;}
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:.7rem;font-family:var(--mono);color:var(--text3);margin-bottom:.4rem;letter-spacing:.06em;}
+input{width:100%;font-family:var(--mono);font-size:.8rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:.5rem .75rem;outline:none;}
+input:focus{border-color:var(--accent);}
+.btn{width:100%;padding:.55rem;border-radius:6px;border:none;font-size:.85rem;font-family:var(--mono);cursor:pointer;margin-top:.5rem;}
+.btn-accent{background:rgba(79,142,247,.2);color:var(--accent);border:1px solid rgba(79,142,247,.4);}
+.btn-accent:hover{background:rgba(79,142,247,.3);}
+.link{text-align:center;margin-top:1rem;font-size:.75rem;font-family:var(--mono);color:var(--text2);}
+.link a{color:var(--accent);text-decoration:none;}
+.msg{font-size:.75rem;font-family:var(--mono);margin-top:.75rem;min-height:1.2rem;}
+.msg.err{color:var(--danger);}
+.msg.ok{color:var(--success);}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>AES <span>Memo</span></h1>
+  <p class="sub">// 暗号化メモ帳 — アカウント作成</p>
+  <div class="field">
+    <label>USERNAME</label>
+    <input type="text" id="username" placeholder="ユーザー名">
+  </div>
+  <div class="field">
+    <label>PASSWORD</label>
+    <input type="password" id="password" placeholder="パスワード">
+  </div>
+  <button class="btn btn-accent" onclick="doRegister()">アカウント作成</button>
+  <div class="msg" id="msg"></div>
+  <div class="link"><a href="/login">ログインはこちら →</a></div>
+</div>
+<script>
+async function doRegister(){
+  const username=document.getElementById('username').value;
+  const password=document.getElementById('password').value;
+  const res=await fetch('/api/register',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({username,password})
+  });
+  const data=await res.json();
+  const msg=document.getElementById('msg');
+  if(res.ok){
+    msg.className='msg ok';
+    msg.textContent='登録成功！ログインページに移動します...';
+    setTimeout(()=>location.href='/login',1000);
+  }else{
+    msg.className='msg err';
+    msg.textContent=data.error;
+  }
+}
+</script>
+</body>
+</html>
