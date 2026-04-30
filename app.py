@@ -28,12 +28,15 @@ import psycopg2
 
 app = Flask(__name__)
 
-# セッション暗号化用の秘密鍵（本番環境では必ず強力なランダム文字列に変更すること）
-app.secret_key = os.environ.get("SECRET_KEY", "super-secret-key-change-in-production")
+_secret_key = os.environ.get("SECRET_KEY")
+if not _secret_key:
+    raise RuntimeError("環境変数 SECRET_KEY が設定されていません")
+app.secret_key = _secret_key
 
-# AES-256 鍵（32 バイト）。環境変数 AES_KEY から取得し、不足分は "0" で補完する
-_raw_key = os.environ.get("AES_KEY", "01234567890123456789012345678901")
-AES_KEY  = _raw_key.encode()[:32].ljust(32, b"0")
+_raw_key = os.environ.get("AES_KEY")
+if not _raw_key:
+    raise RuntimeError("環境変数 AES_KEY が設定されていません")
+AES_KEY = _raw_key.encode()[:32].ljust(32, b"0")
 
 # アプリ起動時にテーブルが存在しない場合は自動作成する
 with app.app_context():
